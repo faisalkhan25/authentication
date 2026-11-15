@@ -1,0 +1,6 @@
+import {z} from 'zod'
+export const registerUserValidation = z.object({
+    name: z.string().min(3, "Name must be atleat 3 character long"),
+    email: z.string().email("Invalid email format"),
+    password: z.string().min(8, "Password must be 8 characters long")
+})
