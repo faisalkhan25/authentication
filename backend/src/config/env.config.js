@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const requiredEnvVars = ["MONGO_URI"];
+const requiredEnvVars = ["MONGO_URI", "PORT"];
 
 for (const envVar of requiredEnvVars) {
   if (!process.env[envVar]) {
