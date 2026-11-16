@@ -1,12 +1,13 @@
 import tryCatch from "../middlewares/tryCatch.js";
 import sanitize from 'mongo-sanitize'
-import { registerUserValidation } from "../validations/user.validation.js";
+import { loginSchemaValidation, registerUserValidation } from "../validations/user.validation.js";
 import { redisClient } from "../config/redis.config.js";
 import { User } from "../schema/user.schema.js";
 import bcrypt from 'bcrypt'
 import crypto from 'crypto'
 import sendMail from "../config/sendMail.config.js";
-import { getVerifyEmailHtml } from "../config/html.js";
+import { getOtpHtml, getVerifyEmailHtml } from "../config/html.js";
+import { generateToken } from "../utils/generateTokens.js";
 
 export const registerUser = tryCatch(
     async (req, res, next) => {
@@ -29,7 +30,7 @@ export const registerUser = tryCatch(
 
         if(await redisClient.get(rateLimitKey)){
             return res.status(429).json({
-                message: "Too many requests, try again later"
+                message: `Too many requests, try again after ${await redisClient.ttl(rateLimitKey)} seconds`
             })
         }
 
@@ -73,7 +74,7 @@ export const registerUser = tryCatch(
 );
 
 export const verifyUser = tryCatch(async (req, res) => {
-    
+
     const { token } = req.params;
 
     if(!token) {
@@ -114,3 +115,111 @@ export const verifyUser = tryCatch(async (req, res) => {
         user: { _id: newUser._id, name: newUser.name, email: newUser.email }
     })
 });
+
+export const loginUser = tryCatch(async(req, res) => {
+
+    const sanitizedBody = sanitize(req.body);
+    const validation = loginSchemaValidation.safeParse(sanitizedBody);
+
+    if(!validation.success) {
+
+        const errors = validation.error.flatten();
+
+        return res.status(400).json({
+            message: errors.fieldErrors,
+            formErrors: errors.formErrors
+        });
+    }
+
+
+    const {email, password} = validation.data;
+ 
+    const rateLimitKey = `login-rate-limit:${req.ip}:${email}`;
+
+    if(await redisClient.get(rateLimitKey)) {
+        const time = await redisClient.ttl(rateLimitKey);
+        return res.status(429).json({
+            message: `Too many requests, try again later after ${time} seconds`
+        })
+    }
+
+    const user = await User.findOne({ email });
+    if(!user) {
+        return res.status(400).json({
+            message: "Invalid Credentials"
+        })
+    }
+    
+    
+    const comparePassword = await bcrypt.compare(password, user.password);
+
+    if(!comparePassword) {
+        return res.status(400).json({
+            message: "Invalid Credentials"
+        });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    const otpKey = `otp:${email}`;
+
+    await redisClient.set(otpKey, JSON.stringify(otp), "EX", 500);
+
+
+    const subject = "OTP for verification";
+    const html = getOtpHtml({email, otp});
+
+    await sendMail({email, subject, html});
+
+    await redisClient.set(rateLimitKey, "true", "EX", 60);
+
+    return res.status(200).json({
+        message: "OTP has been sent to your registered email and is valid for 5 minutes"
+    })
+})
+
+export const verifyOtp = tryCatch(async (req, res) => {
+
+    const {email, otp} = req.body;
+
+    if(!email || !otp) {
+        return res.status(400).json({
+            message: "Details not found"
+        });
+    }
+
+    const otpKey = `otp:${email}`
+
+    const storedOtpString = await redisClient.get(otpKey);
+
+    if(!storedOtpString) {
+        return res.status(400).json({
+            message: "Otp is expired"
+        });
+    }
+    const storedOtp = JSON.parse(storedOtpString);
+
+    if(otp !== storedOtp) {
+        return res.status(400).json({
+            message: "Invalid Otp"
+        })
+    }
+
+
+    await redisClient.del(otpKey);
+
+    let user = await User.findOne({email});
+
+    const tokenData = await generateToken(user._id, res);
+
+    res.status(200).json({
+        message: `Welcome ${user.name}`,
+        user: {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+        },
+    });
+
+})

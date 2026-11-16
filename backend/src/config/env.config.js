@@ -19,5 +19,7 @@ export const envConfig = Object.freeze({
   FRONTEND_URL: process.env.FRONTEND_URL,
   SMTP_USER: process.env.SMTP_USER,
   SMTP_PASSWORD: process.env.SMTP_PASSWORD,
+  ACCESS_TOKEN_SECRET: process.env.ACCESS_TOKEN_SECRET,
+  REFRESH_TOKEN_SECRET: process.env.REFRESH_TOKEN_SECRET,
 });
 
