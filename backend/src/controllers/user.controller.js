@@ -7,7 +7,7 @@ import bcrypt from 'bcrypt'
 import crypto from 'crypto'
 import sendMail from "../config/sendMail.config.js";
 import { getOtpHtml, getVerifyEmailHtml } from "../config/html.js";
-import { generateToken } from "../utils/generateTokens.js";
+import { generateAccessToken, generateToken, verifyRefreshToken } from "../utils/generateTokens.js";
 
 export const registerUser = tryCatch(
     async (req, res, next) => {
@@ -117,6 +117,7 @@ export const verifyUser = tryCatch(async (req, res) => {
 });
 
 export const loginUser = tryCatch(async(req, res) => {
+    
 
     const sanitizedBody = sanitize(req.body);
     const validation = loginSchemaValidation.safeParse(sanitizedBody);
@@ -169,6 +170,7 @@ export const loginUser = tryCatch(async(req, res) => {
     const subject = "OTP for verification";
     const html = getOtpHtml({email, otp});
 
+
     await sendMail({email, subject, html});
 
     await redisClient.set(rateLimitKey, "true", "EX", 60);
@@ -199,7 +201,7 @@ export const verifyOtp = tryCatch(async (req, res) => {
     }
     const storedOtp = JSON.parse(storedOtpString);
 
-    if(otp !== storedOtp) {
+    if(String(otp) !== String(storedOtp)) {
         return res.status(400).json({
             message: "Invalid Otp"
         })
@@ -220,6 +222,45 @@ export const verifyOtp = tryCatch(async (req, res) => {
             email: user.email,
             role: user.role,
         },
+    });
+
+})
+
+export const myProfile = tryCatch(async (req, res) => {
+    const user = req.user;
+
+    res.status(200).json({
+        user,
+    })
+})
+
+
+export const getAccessTokenUsingRefreshToken = tryCatch(async (req, res) => {
+
+    const refreshToken = req.cookies?.refreshToken;
+
+    console.log(refreshToken);
+
+    if(!refreshToken) {
+        return res.status(401).json({
+            message: "Login Again"
+        })
+    }
+
+    
+    const decodedData = await verifyRefreshToken(refreshToken);
+    if(!decodedData) {
+        res.clearCookie("refreshToken");
+
+        return res.status(401).json({
+            message: "Refresh Token not valid"
+        })
+    }
+
+    generateAccessToken(decodedData.id, res);
+
+    res.status(200).json({
+        message: "token refreshed"
     });
 
 })
