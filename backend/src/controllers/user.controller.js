@@ -7,7 +7,7 @@ import bcrypt from 'bcrypt'
 import crypto from 'crypto'
 import sendMail from "../config/sendMail.config.js";
 import { getOtpHtml, getVerifyEmailHtml } from "../config/html.js";
-import { generateAccessToken, generateToken, verifyRefreshToken } from "../utils/generateTokens.js";
+import { generateAccessToken, generateToken, revokeRefreshToken, verifyRefreshToken } from "../utils/generateTokens.js";
 
 export const registerUser = tryCatch(
     async (req, res, next) => {
@@ -263,4 +263,20 @@ export const getAccessTokenUsingRefreshToken = tryCatch(async (req, res) => {
         message: "token refreshed"
     });
 
+})
+
+
+export const logout = tryCatch(async (req, res) => {
+
+    const userId = req.user._id;
+
+    await revokeRefreshToken(userId);
+    await redisClient.del(`user:${userId}`);
+
+    res.clearCookie("refreshToken");
+    res.clearCookie("accessToken");
+
+    res.status(200).json({
+        message: "Logout Successfull"
+    })
 })

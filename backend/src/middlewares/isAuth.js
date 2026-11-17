@@ -6,7 +6,7 @@ import { User } from '../schema/user.schema.js';
 
 
 export const isAuth = async(req, res, next) => {
-    
+
     try{
         const accessToken = req.cookies.accessToken;
 
