@@ -5,11 +5,13 @@ import { toast } from "react-toastify";
 import axios from "axios";
 import { server } from "../main";
 import { useNavigate } from "react-router-dom";
+import { AppData } from "../context/AppContext";
 
 const VerifyOtp = () => {
 
   const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const { setUser, setIsAuth, fetchUser } = AppData();
 
   const email = localStorage.getItem("email");
 
@@ -23,9 +25,13 @@ const VerifyOtp = () => {
 
       const {data} = await axios.post(`${server}/api/v1/verifyotp`, {email, otp}, {withCredentials: true});
       toast.success(data.message);
-      localStorage.clear("email");
+      localStorage.removeItem("email");
 
-      navigate("/");
+      setUser(data.user);
+      setIsAuth(true);
+      await fetchUser();
+
+      navigate("/profile");
 
     }
     catch(err) {
