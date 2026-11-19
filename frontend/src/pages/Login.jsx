@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from 'axios'
 import { toast } from "react-toastify";
 import AuthCard from "../components/AuthCard";
 import FormInput from "../components/FormInput";
 import { server } from "../main";
+import { AppData } from "../context/AppContext";
+import Loading from "../components/Loading";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -14,19 +16,36 @@ const Login = () => {
 
   const [loading, setLoading] = useState(false);
 
+  const { isAuth, isLoading } = AppData();
+
+  useEffect(() => {
+    if (isAuth) {
+      navigate("/profile");
+    }
+  }, [isAuth, navigate]);
+
+
+  if (isLoading) {
+    return <Loading message="Loading..." />
+  }
+
+  if (isAuth) {
+    return <Loading message="Loading profile..." />
+  }
+
   const submitHandler = async (e) => {
     e.preventDefault();
     setLoading(true);
-    try{
-      const {data} = await axios.post(`${server}/api/v1/login`, {
+    try {
+      const { data } = await axios.post(`${server}/api/v1/login`, {
         email,
         password,
       });
       localStorage.setItem("email", email);
       toast.success(data.message);
       navigate("/verifyotp");
-      
-    }catch(err) {
+
+    } catch (err) {
       const backendMessage = err.response?.data?.message;
       const errorMessage =
         typeof backendMessage === "object" && backendMessage !== null
@@ -37,6 +56,10 @@ const Login = () => {
     }
     setLoading(false);
   }
+
+
+
+
 
   return (
     <AuthCard

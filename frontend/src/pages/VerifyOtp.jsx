@@ -18,6 +18,7 @@ const VerifyOtp = () => {
   const navigate = useNavigate();
 
   const submitHandler = async (e) => {
+    
     e.preventDefault();
     setIsLoading(true);
 

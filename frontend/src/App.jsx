@@ -7,7 +7,10 @@ import Register from "./pages/Register";
 import VerifyOtp from "./pages/VerifyOtp";
 import Profile from "./pages/Profile";
 
+
+
 const App = () => {
+
   return (
     <BrowserRouter>
       <ToastContainer position="top-right" theme="dark" />
@@ -16,7 +19,7 @@ const App = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/verifyotp" element={<VerifyOtp />} />
-        <Route path="/profile" element={<Profile />} />
+        <Route path="/profile" element={ <Profile />} />
       </Routes>
     </BrowserRouter>
   );

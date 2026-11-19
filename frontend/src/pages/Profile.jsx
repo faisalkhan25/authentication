@@ -1,16 +1,25 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import ProfileField from "../components/ProfileField";
+import Loading from "../components/Loading";
 import { AppData } from "../context/AppContext";
+import { api } from "../config/axios-config";
+import { toast } from "react-toastify";
+import { useEffect } from "react";
 
 const Profile = () => {
-  const { user, isLoading } = AppData();
+
+  const { user, isLoading, isAuth, setIsAuth, setUser } = AppData();
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if(!isAuth) {
+      navigate("/login")
+    }
+  }, [isAuth, navigate]);
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-sm text-slate-400">
-        Loading profile...
-      </div>
-    );
+    return <Loading message="Loading profile..." />;
   }
 
   if (!user) {
@@ -41,6 +50,22 @@ const Profile = () => {
           timeStyle: "short",
         })
       : "N/A";
+
+  const handleLogout = async (e) => {
+
+    try {
+      const {data} = await api.get("/api/v1/logout");
+      console.log(data) ;
+      toast.success(data.message);
+      setIsAuth(false);
+      setUser(null);
+    }
+    catch(error) {
+      console.log(error);
+      toast.error(error.message);
+    }
+
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-slate-950 px-4 py-8 text-slate-100 sm:px-6 sm:py-12">
@@ -101,6 +126,7 @@ const Profile = () => {
 
           {/* Static Logout Button */}
           <button
+            onClick={handleLogout}
             type="button"
             className="mt-6 w-full cursor-pointer rounded-xl border border-rose-500/30 bg-rose-500/10 px-5 py-2.5 text-sm font-medium text-rose-400 transition-all duration-200 hover:border-rose-500/50 hover:bg-rose-500/20 hover:text-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 focus:ring-offset-slate-950"
           >
@@ -113,4 +139,3 @@ const Profile = () => {
 };
 
 export default Profile;
-
