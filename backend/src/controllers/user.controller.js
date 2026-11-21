@@ -7,7 +7,7 @@ import bcrypt from 'bcrypt'
 import crypto from 'crypto'
 import sendMail from "../config/sendMail.config.js";
 import { getOtpHtml, getVerifyEmailHtml } from "../config/html.js";
-import { generateAccessToken, generateToken, revokeRefreshToken, verifyRefreshToken } from "../utils/generateTokens.js";
+import { generateAccessToken, generateCsrfToken, generateToken, revokeRefreshToken, verifyRefreshToken } from "../utils/generateTokens.js";
 
 export const registerUser = tryCatch(
     async (req, res, next) => {
@@ -210,18 +210,14 @@ export const verifyOtp = tryCatch(async (req, res) => {
 
     await redisClient.del(otpKey);
 
-    let user = await User.findOne({email});
+    let user = await User.findOne({email}).select("-password");
 
-    const tokenData = await generateToken(user._id, res);
+    const {csrfToken} = await generateToken(user._id, res);
 
     res.status(200).json({
         message: `Welcome ${user.name}`,
-        user: {
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-        },
+        user,
+        csrfToken
     });
 
 })
@@ -238,8 +234,6 @@ export const myProfile = tryCatch(async (req, res) => {
 export const getAccessTokenUsingRefreshToken = tryCatch(async (req, res) => {
 
     const refreshToken = req.cookies?.refreshToken;
-
-    console.log(refreshToken);
 
     if(!refreshToken) {
         return res.status(401).json({
@@ -275,8 +269,28 @@ export const logout = tryCatch(async (req, res) => {
 
     res.clearCookie("refreshToken");
     res.clearCookie("accessToken");
+    res.clearCookie("csrfToken");
 
     res.status(200).json({
         message: "Logout Successfull"
     })
+})
+
+export const refreshCsrfToken = tryCatch( async (req, res) => {
+
+    const csrfToken = generateCsrfToken(res);
+
+    res.status(200).json({
+        csrfToken
+    })
+});
+
+
+export const getAdmin = tryCatch( async (req, res) => {
+
+    return res.status(200).json({
+        message: "user fetched successfully",
+        user: req.user
+    });
+    
 })

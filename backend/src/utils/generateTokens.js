@@ -1,6 +1,8 @@
 import jwt from 'jsonwebtoken'
 import { envConfig } from '../config/env.config.js'
 import { redisClient } from '../config/redis.config.js';
+import crypto from 'node:crypto'
+
 
 
 export const generateToken = async (id, res) => {
@@ -15,6 +17,7 @@ export const generateToken = async (id, res) => {
     const refreshTokenKey = `refresh-token-key:${id}`;
     await redisClient.set(refreshTokenKey, refreshToken, "EX", 7 * 24 * 60 * 60)
 
+    const csrfToken = generateCsrfToken(res);
 
     res.cookie("accessToken", accessToken, {
         httpOnly: true,
@@ -27,7 +30,9 @@ export const generateToken = async (id, res) => {
         secure: envConfig.NODE_ENV === "production",
         sameSite: "lax",
         maxAge: 7 * 24 * 60 * 60 * 1000
-    })
+    });
+
+    return {csrfToken, accessToken, refreshToken};
 }
 
 export const verifyRefreshToken = async(refreshToken) => {
@@ -74,4 +79,22 @@ export const generateAccessToken = async (id, res) => {
 
 export const revokeRefreshToken = async (userId) => {
     await redisClient.del(`refresh-token-key:${userId}`);
+}
+
+export const generateCsrfToken = ( res) => {
+    
+    const csrfToken = crypto.randomBytes(16).toString("hex");
+    const hashedCsrfToken = crypto
+        .createHash("sha256")
+        .update(csrfToken)
+        .digest("hex");
+
+    
+    res.cookie("csrfToken", hashedCsrfToken, {
+        httpOnly: false,
+        secure: envConfig.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 15 * 60 * 1000
+    })
+    return hashedCsrfToken;
 }

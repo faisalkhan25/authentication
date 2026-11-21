@@ -1,7 +1,8 @@
-import axios from "axios";
+
 import { createContext, useContext, useEffect, useState }  from "react";
 import { api } from "../config/axios-config";
 import "../config/apiInterceptor";
+import { setCsrfToken } from "../config/token-setting";
 
 const AppContext = createContext(null);
 
@@ -9,6 +10,7 @@ export const ContextProvider =  ({ children }) => {
     const [user, setUser] = useState(null);
     const [isAuth, setIsAuth] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+
 
     async function fetchUser() {
         setIsLoading(true);
@@ -31,8 +33,19 @@ export const ContextProvider =  ({ children }) => {
         }
     }
 
+    async function fetchCsrfToken() {
+        try{
+            const {data} = await api.get(`/api/v1/csrf-token`);
+            setCsrfToken(data.csrfToken);
+        }
+        catch(error) {
+            console.log(`[CSRF-TOKEN]:${error.message}`);
+        }
+    }
+
     useEffect( () => {
          fetchUser();
+         fetchCsrfToken();
     }, []);
 
     return <AppContext.Provider value={{user, setUser, isAuth, setIsAuth, isLoading, setIsLoading, fetchUser}}>

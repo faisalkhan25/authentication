@@ -12,7 +12,8 @@ export const isAuth = async(req, res, next) => {
 
         if(!accessToken) {
             return res.status(403).json({
-                message: "Please Login - No Token Provided"
+                message: "Please Login - No Token Provided",
+                code: "ACCESS-TOKEN"
             });
         }
 
@@ -21,7 +22,8 @@ export const isAuth = async(req, res, next) => {
             decodedData = jwt.verify(accessToken, envConfig.ACCESS_TOKEN_SECRET);
         }catch {   
             return res.status(400).json({
-                message: "Token is Expired"
+                message: "Token is Expired",
+                code: "ACCESS-TOKEN"
             })
         }
 

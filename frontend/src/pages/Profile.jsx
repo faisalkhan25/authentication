@@ -5,6 +5,7 @@ import { AppData } from "../context/AppContext";
 import { api } from "../config/axios-config";
 import { toast } from "react-toastify";
 import { useEffect } from "react";
+import { setCsrfToken } from "../config/token-setting";
 
 const Profile = () => {
 
@@ -54,11 +55,12 @@ const Profile = () => {
   const handleLogout = async (e) => {
 
     try {
-      const {data} = await api.get("/api/v1/logout");
-      console.log(data) ;
+      const {data} = await api.post("/api/v1/logout");
+      
       toast.success(data.message);
       setIsAuth(false);
       setUser(null);
+      setCsrfToken(null);
     }
     catch(error) {
       console.log(error);

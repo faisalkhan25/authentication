@@ -3,10 +3,10 @@ import NavButton from "./NavButton";
 import { AppData } from "../context/AppContext";
 
 const Navbar = () => {
-
-  const {isAuth, isLoading} = AppData();
-
   
+  const { user, isAuth, isLoading } = AppData();
+  const isAdmin = isAuth && user?.role === "admin";
+
   return (
     <header className="border-b border-slate-800/80 bg-slate-950/70 backdrop-blur-md">
       <nav className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3 sm:px-6 sm:py-4">
@@ -18,6 +18,11 @@ const Navbar = () => {
         </Link>
 
         <div className="flex items-center gap-2 sm:gap-3">
+          {!isLoading && isAdmin && (
+            <NavButton to="/dashboard" variant="secondary">
+              Dashboard
+            </NavButton>
+          )}
           <NavButton to="/login" variant="secondary">
             Login
           </NavButton>

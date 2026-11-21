@@ -6,6 +6,7 @@ import axios from "axios";
 import { server } from "../main";
 import { useNavigate } from "react-router-dom";
 import { AppData } from "../context/AppContext";
+import { setCsrfToken } from "../config/token-setting";
 
 const VerifyOtp = () => {
 
@@ -30,7 +31,7 @@ const VerifyOtp = () => {
 
       setUser(data.user);
       setIsAuth(true);
-      await fetchUser();
+      setCsrfToken(data.csrfToken);
 
       navigate("/profile");
 
